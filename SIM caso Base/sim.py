@@ -1,4 +1,4 @@
-from personas import Persona
+from personas import Paciente
 from random import uniform, normalvariate, choice
 from parametros import *
 
@@ -13,7 +13,7 @@ class Simulation:
         self.hora = 0
         self.eventos = []
         self.cantidad_equipo = cantidad_equipo
-        self.personas = []
+        self.pacientes = []
         self.siguiente_evento = None
 
     def nuevos_pacientes(self):
@@ -29,15 +29,15 @@ class Simulation:
         personas = list(map(lambda x: int(x), proporciones))
         for patologia, n_personas in enumerate(personas):
             for i in range(1, n_personas):
-                self.personas.append(Persona(choice(NOMBRES), patologia + 1))
+                self.pacientes.append(Paciente(choice(NOMBRES), patologia + 1))
 
     def asignacion_semanal(self):
-
+        for paciente in self.pacientes:
+            
 
     def run(self):
-        while self.dia <= DURACION_SIM:
+        while self.dia <= 7:
             while self.hora <= DURACION_DIA:
                 self.siguiente_evento = self.eventos.pop(0)
-                
+
             self.dia += 1
-    

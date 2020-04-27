@@ -21,18 +21,17 @@ DURACION_DIA = 10
 DURACION_SIM = 90
 
 
-
 # CAMILLA, ULTRASONIDO, INFRARROJO, BICICLETA, CINTA, KINE
 CANTIDAD_EQUIPO_PERSONAL_DISPONIBLE = [5, 3, 5, 3, 4, 4]
-USO_EQUIPO_PERSONAL_P1 = [1, 1, 0, 0, 0, 1]
-USO_EQUIPO_PERSONAL_P2 = [1, 0, 1, 0, 0, 1]
-USO_EQUIPO_PERSONAL_P3 = [1, 1, 1, 0, 0, 1]
-USO_EQUIPO_PERSONAL_P4 = [0, 0, 0, 0, 1, 0.25]
-USO_EQUIPO_PERSONAL_P5 = [1, 1, 0, 1, 0, 1]
-USO_EQUIPO_PERSONAL_P6 = [1, 1, 0, 0, 0, 1]
-USO_EQUIPO_PERSONAL_P7 = [0, 1, 0, 0, 1, 0.5]
-USO_EQUIPO_PERSONAL_P8 = [1, 0, 0, 0, 0, 1]
-USO_EQUIPO_PERSONAL_P9 = [1, 0, 1, 0, 0, 1]
+USO_EQUIPO_PERSONAL = ([1, 1, 0, 0, 0, 1],  # Por patología
+[1, 0, 1, 0, 0, 1],
+[1, 1, 1, 0, 0, 1],
+[0, 0, 0, 0, 1, 0.25],
+[1, 1, 0, 1, 0, 1],
+[1, 1, 0, 0, 0, 1],
+[0, 1, 0, 0, 1, 0.5],
+[1, 0, 0, 0, 0, 1],
+[1, 0, 1, 0, 0, 1])
 
 COSTO_TRATAMIENTO_EXTERNALIZADO = [57.0, 57.0, 82.0, 30.3, 57.0, 69.0, 49.5, 32.0, 57.0]
 
@@ -45,4 +44,4 @@ AUSENTISMO_DESDE_14 = (0.1, 0.2)
 
 with open('personas.csv', 'r', encoding='utf-8') as file:
     NOMBRES = [nombre.strip() for nombre in file]
-    
+    NOMBRES.remove('Nombre')
