@@ -2,10 +2,10 @@
 # Duracion visitas #
 ######
 
-NRO_VISITAS = [10, 15, 25, 12, 10, 7, 13, 8, 9]
+NRO_VISITAS = [2, 15, 25, 12, 10, 7, 13, 8, 9]
 MIN_HORAS_ENTRE_VISITAS = [24, 24, 12, 48, 36, 48, 24, 48, 48]
 MAX_HORAS_ENTRE_VISITAS = [48, 48, 24, 72, 72, 72, 48, 72, 72]
-DURACION_SESION = [0.5, 0.5, 1, 0.75, 0.75, 0.5, 0.5, 0.75, 1]
+DURACION_SESION = [1, 0.5, 1, 0.75, 0.75, 0.5, 0.5, 0.75, 1]
 SESION_INCOMPLETA_76_99 = 0.5
 SESION_INCOMPLETA_00_75 = 1
 PENALIDAD_SESION_FUERA_DE_PLAZO = [1, 1, 2, 2, 2, 1, 2, 3, 1]
@@ -22,7 +22,7 @@ DURACION_SIM = 90
 
 
 # CAMILLA, ULTRASONIDO, INFRARROJO, BICICLETA, CINTA, KINE
-CANTIDAD_EQUIPO_PERSONAL_DISPONIBLE = [5, 3, 5, 3, 4, 4]
+CANTIDAD_EQUIPO_PERSONAL_DISPONIBLE = [1, 1, 1, 1, 1, 1]
 USO_EQUIPO_PERSONAL = ([1, 1, 0, 0, 0, 1],  # Por patología
 [1, 0, 1, 0, 0, 1],
 [1, 1, 1, 0, 0, 1],
@@ -40,8 +40,3 @@ VAR_DURACION_SESION = [0.1, 0.05, 0.15, 0.05, 0.03, 0.04, 0.07, 0.1, 0.12]
 AUSENTISMO_HASTA_5 = (0.5, 0.1)
 AUSENTISMO_5_A_13 = (0.8, 0.15)
 AUSENTISMO_DESDE_14 = (0.1, 0.2)
-
-
-with open('personas.csv', 'r', encoding='utf-8') as file:
-    NOMBRES = [nombre.strip() for nombre in file]
-    NOMBRES.remove('Nombre')
