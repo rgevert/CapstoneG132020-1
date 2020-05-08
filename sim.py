@@ -1,5 +1,5 @@
 from datetime import date, datetime, timedelta, time
-
+from random import random
 from entidades import Paciente, Evento, Atencion, AsignacionSemanal
 from random import uniform, normalvariate, choice
 from parametros import *
@@ -13,7 +13,11 @@ class CentroKine:
         self.schedule = []
         self.recursos = recursos
         self.tiempo_actual = tiempo_inicio
-        self.tiempo_fin = tiempo_fin 
+        self.tiempo_fin = tiempo_fin
+        self.utilidad = 0
+        self.pacientes_externo = 0
+        self.pacientes_atentidos = 0
+        self.cantidad_pacientes_con_problemas_por_equipo = [0, 0, 0, 0, 0, 0]
 
         primer_evento = AsignacionSemanal(self.tiempo_actual)
         self.agregar_evento(primer_evento)
@@ -33,7 +37,7 @@ class CentroKine:
             LLEGADO EN EL LISTADO SEMANAL"""
 
         for paciente in pacientes:
-            print(F'AGENDANDO PACIENTE {paciente.id}')
+            #print(F'AGENDANDO PACIENTE {paciente.id}, patologia {paciente.patologia}')
             for _ in range(paciente.cantidad_sesiones):
                 if paciente.hora_ultima_sesion_asignada is None:
                     hora_inicio = self.tiempo_actual
@@ -42,6 +46,8 @@ class CentroKine:
                     hora_inicio = paciente.hora_ultima_sesion_asignada + paciente.tiempo_min
                     hora_max = paciente.hora_ultima_sesion_asignada + paciente.tiempo_min + paciente.tiempo_max
                 self.asignar_sesion(paciente, hora_inicio, hora_max)
+
+    def asignacion_falla(self, eventos, )
 
     #INPUT paciente: Paciente, hora_inicio: datetime, hora_max: datetime
     def asignar_sesion(self, paciente, hora_inicio, hora_max):
@@ -52,10 +58,10 @@ class CentroKine:
         while (not sesion_asignada):
 
             if hora > hora_max:
-                print("No se recibe al paciente")
+                #print("No se recibe al paciente")
                 break
 
-            if self.verificar_disponibilidad(paciente, hora, hora + paciente.duracion_sesion):
+            if self.verificar_disponibilidad(paciente, hora, hora + paciente.duracion_sesion, self.recursos):
                 sesion_asignada = True
                 paciente.sesiones_asignadas += 1
                 paciente.hora_ultima_sesion_asignada = hora
@@ -63,8 +69,8 @@ class CentroKine:
                 atencion = Atencion(paciente, hora, hora + paciente.duracion_sesion)
                 self.agregar_evento(atencion)
                 
-                print(f'Sesion {paciente.sesiones_asignadas}')
-                print(f'Inicio: {hora}, Fin: {hora + paciente.duracion_sesion}')
+                #print(f'Sesion {paciente.sesiones_asignadas}')
+                #print(f'Inicio: {hora}, Fin: {hora + paciente.duracion_sesion}')
                 break
             else:
                 for evento in self.schedule:
@@ -74,9 +80,9 @@ class CentroKine:
                         break
 
     #INPUT paciente: Paciente, inicio:datetime, final: datetime
-    def verificar_disponibilidad(self, paciente, inicio, final):
+    def verificar_disponibilidad(self, paciente, inicio, final, recursos):
         
-        aux_recursos = self.recursos.copy()
+        aux_recursos = recusos
 
         for evento in self.schedule:
             if evento.inicio < final and evento.final > inicio:
@@ -121,7 +127,7 @@ class CentroKine:
         
         while self.tiempo_actual < self.tiempo_fin:
 
-            #print(self.tiempo_actual)
+            
 
             for i, evento in enumerate(self.schedule):
                 if evento.cumplido and self.tiempo_actual > evento.final:
@@ -133,20 +139,49 @@ class CentroKine:
 
                     if type(evento) == AsignacionSemanal:
                         self.asignacion_semanal(evento.lista_pacientes())
-                        #nueva_asignacion = self.tiempo_actual + timedelta(days = 7)
-                        #self.agregar_evento(AsignacionSemanal(nueva_asignacion))
+                        nueva_asignacion = self.tiempo_actual + timedelta(days = 7)
+                        self.agregar_evento(AsignacionSemanal(nueva_asignacion))
 
                     elif type(evento) == Atencion:
-                        print(f'Atendiendo persona, {evento.paciente.id}')
-                        print('Inicio', evento.inicio)
-                        print('Final', evento.final)
+                        eventos_afectados_falla_equipo = []
+                        eventos_afectados_ausente = []
+                        tiempo_ausentismo = 0
+                        tiempo_falla = 0
+
+                        for equipo, cantidad in enumerate(evento.paciente.recursos_necesitados[:5]):
+                            if cantidad != 0 and random() <= PROBA_FALLA_EQUIPO:
+                                tiempo_falla = uniform(evento.inicio, evento.final)
+                                print(f'falló {EQUIPO[equipo]} a las {tiempo_falla}')
+                                eventos_afectados_falla_equipo = list(filter(lambda event: tiempo_falla <= event.inicio
+                                                                        <= tiempo_falla +
+                                                                        timedelta(hours=
+                                                                                  DURACION_FALLA) and type(event) == Atencion
+                                                                        and event.paciente.recursos_necesitados[equipo]!=0, self.schedule))
+                                self.cantidad_pacientes_con_problemas_por_equipo[equipo] += len(eventos_afectados_falla_equipo) 
+
+                        if evento.paciente.recursos_necesitados[5] != 0 and random() <= PROBA_AUSENTISMO:
+                            tiempo_ausentismo = uniform(evento.inicio, evento.final)
+                            print(f'falló {EQUIPO[5]} a las {tiempo_ausentismo}')
+                            eventos_afectados_ausente = list(filter(lambda event: tiempo_ausentismo <= event.inicio
+                                                                    <= tiempo_ausentismo +
+                                                                    timedelta(hours=DURACION_FALLA)
+                                                                    and type(event) == Atencion,
+                                                                    self.schedule))
+                            self.cantidad_pacientes_con_problemas_por_equipo[5] += len(eventos_afectados_ausente)
+                        eventos_afectados = eventos_afectados_ausente + list(set(eventos_afectados_falla_equipo) - set(eventos_afectados_ausente))
+
+                        print(self.cantidad_pacientes_con_problemas_por_equipo)
+                        if len(eventos_afectados) > 0:
+                            print(eventos_afectados)
+                        #print(f'Atendiendo persona, {evento.paciente.id}')
+                        #print('Inicio', evento.inicio)
+                        #print('Final', evento.final)
                     evento.cumplido = True
                     break
 
 
 
-sim = CentroKine(CANTIDAD_EQUIPO_PERSONAL_DISPONIBLE, datetime(2020,1,1,8), datetime(2020,2,1,8))
-sim.run()
+
 
 
 
