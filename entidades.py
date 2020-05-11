@@ -1,12 +1,14 @@
 from datetime import datetime, timedelta
-from random import uniform, normalvariate, choice, randint
+from random import uniform, normalvariate, choice, randint, random
 from itertools import count
+from numpy.random import poisson
+
 from parametros import *
 
 
 class Paciente:
 
-    n = count(start = 1)
+    n = count(start = 0)
 
     def __init__(self, patologia):
 
@@ -16,6 +18,9 @@ class Paciente:
         self.cantidad_sesiones = NRO_VISITAS[patologia - 1]
         self.sesiones_asignadas = 0
         self.sesiones_cumplidas = 0
+        self.sesiones_atendidas = 0
+
+        self.sesiones_cumplidas_externas = 0
 
         self.recursos_necesitados = USO_EQUIPO_PERSONAL[patologia - 1]
 
@@ -29,9 +34,8 @@ class Paciente:
 
         duracion_sesion = DURACION_SESION[patologia - 1]
         self.duracion_sesion = timedelta(minutes = duracion_sesion*60)
-    
-    def __repr__(self):
-        return f'{self.id} P{self.patologia}'
+
+        self.penalidad = PENALIDAD_SESION_FUERA_DE_PLAZO[patologia - 1]
 
 
 class Evento:
@@ -53,9 +57,41 @@ class Atencion(Evento):
     def __init__(self, paciente, hora_inicio, hora_fin):
         super().__init__(hora_inicio, hora_fin, paciente.recursos_necesitados)
         self.paciente = paciente
-    
-    def __repr__(self):
-        return f'Atencion a paciente {self.paciente}, a las {self.inicio}'
+
+    def ausente(self):
+        if self.paciente.sesiones_cumplidas < 5:
+            return random() < AUSENTISMO_HASTA_5
+        elif self.paciente.sesiones_cumplidas <= 13:
+            return random() < AUSENTISMO_5_A_13
+        else:
+            return random() < AUSENTISMO_DESDE_14
+
+    #retorna el numero del equipo que falla y la hora
+    def falla(self):
+
+        if random() < PROBA_AUSENTISMO:
+            hora_fin = self.inicio + timedelta(hours = 6)
+            recursos = [0,0,0,0,0,1]
+            return Falla(self.inicio, hora_fin, recursos)
+
+        for equipo, cantidad in enumerate(self.recursos_necesitados[:5]):
+            if cantidad > 0:
+                if random() < PROBA_FALLA_EQUIPO:
+                    hora_fin = self.inicio + timedelta(hours = 6)
+                    recursos = [0,0,0,0,0,0]
+                    recursos[equipo] = 1
+                    return Falla(self.inicio, hora_fin, recursos)
+
+        return False
+
+
+
+    def actualizar_duracion(self):
+        variacion = VAR_DURACION_SESION[self.paciente.patologia - 1]
+        duracion = DURACION_SESION[self.paciente.patologia - 1]*(1-variacion/2)*60*60
+        duracion += random()*variacion*60*60
+        duracion = int(duracion)
+        self.final = self.inicio + timedelta(seconds = duracion)
 
 
 class AtencionExterna(Evento):
@@ -64,29 +100,19 @@ class AtencionExterna(Evento):
         super().__init__(hora_inicio, hora_fin, None)
         self.paciente = paciente
 
-
 class AsignacionSemanal(Evento):
 
     def __init__(self, hora_inicio):
         super().__init__(hora_inicio, hora_inicio, None)
 
     def lista_pacientes(self):
-        pacientes = []
-        proporciones = (uniform(-0.799440823, 6.184056207),
-                        uniform(-0.640579676, 5.255964292),
-                        uniform(-0.482987409, 6.021448947),
-                        uniform(0.019352488, 3.057570589),
-                        uniform(0.319904106, 4.910865125),
-                        uniform(1.513474791, 4.024986747),
-                        uniform(-0.824229691, 5.901152768),
-                        uniform(0.091394772, 4.37014369),
-                        uniform(-0.27989108, 4.587583388))
-        personas = list(map(lambda x: int(x), proporciones))
-        for patologia, n_personas in enumerate(personas):
-            for _ in range(1, n_personas):
-                pacientes.append(Paciente(patologia + 1))
-        return pacientes
+        lista_pacientes = []
+        for i in range(9):
+            for j in range(poisson(TASA_LLEGADA_SEMANAL[i])):
+                lista_pacientes.append(Paciente(i+1))
+        return lista_pacientes
 
-
-
-
+class Falla(Evento):
+    
+    def __init__(self, hora_inicio, hora_fin, recursos_necesitados):
+        super().__init__(hora_inicio, hora_fin, recursos_necesitados)
