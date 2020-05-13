@@ -1,10 +1,12 @@
 from datetime import datetime, timedelta
-from random import uniform, normalvariate, choice, randint, random
+from random import uniform, normalvariate, choice, randint, random, seed as rseed
 from itertools import count
-from numpy.random import poisson
+from numpy.random import poisson, seed as nseed
 
 from parametros import *
 
+#rseed(0)
+#nseed(0)
 
 class Paciente:
 
@@ -17,15 +19,15 @@ class Paciente:
 
         self.cantidad_sesiones = NRO_VISITAS[patologia - 1]
         self.sesiones_asignadas = 0
-        self.sesiones_cumplidas = 0
+        self.sesiones_cumplidas = []
         self.sesiones_atendidas = 0
 
         self.sesiones_cumplidas_externas = 0
 
         self.recursos_necesitados = USO_EQUIPO_PERSONAL[patologia - 1]
 
-        self.hora_ultima_sesion_asignada = None
-        self.hora_ultima_sesion_cumplida = None
+        self.ultima_sesion_asignada = None
+        self.ultima_sesion_cumplida = None
 
         tiempo_min = MIN_HORAS_ENTRE_VISITAS[patologia - 1]
         tiempo_max = MAX_HORAS_ENTRE_VISITAS[patologia - 1]
@@ -37,14 +39,25 @@ class Paciente:
 
         self.penalidad = PENALIDAD_SESION_FUERA_DE_PLAZO[patologia - 1]
 
+    def ausente(self):
+        if len(self.sesiones_cumplidas) < 5:
+            return random() < AUSENTISMO_HASTA_5
+        elif len(self.sesiones_cumplidas) <= 13:
+            return random() < AUSENTISMO_5_A_13
+        else:
+            return random() < AUSENTISMO_DESDE_14
+
 
 class Evento:
+    n = count(start = 0)
 
-    def __init__(self, hora_inicio, hora_fin, recursos_necesitados):
+    def __init__(self, hora_inicio, hora_fin, recursos_necesitados = None):
         self.inicio = hora_inicio
         self.final = hora_fin
+        self.pasadas = 0
 
         self.cumplido = False
+        self.id = next(self.n)
 
         if recursos_necesitados is None:
             self.recursos_necesitados = [0, 0, 0, 0, 0, 0]
@@ -57,14 +70,6 @@ class Atencion(Evento):
     def __init__(self, paciente, hora_inicio, hora_fin):
         super().__init__(hora_inicio, hora_fin, paciente.recursos_necesitados)
         self.paciente = paciente
-
-    def ausente(self):
-        if self.paciente.sesiones_cumplidas < 5:
-            return random() < AUSENTISMO_HASTA_5
-        elif self.paciente.sesiones_cumplidas <= 13:
-            return random() < AUSENTISMO_5_A_13
-        else:
-            return random() < AUSENTISMO_DESDE_14
 
     #retorna el numero del equipo que falla y la hora
     def falla(self):
@@ -106,6 +111,7 @@ class AsignacionSemanal(Evento):
         super().__init__(hora_inicio, hora_inicio, None)
 
     def lista_pacientes(self):
+        #return [Paciente(1) for i in range(5)]
         lista_pacientes = []
         for i in range(9):
             for j in range(poisson(TASA_LLEGADA_SEMANAL[i])):
