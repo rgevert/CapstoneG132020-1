@@ -1,4 +1,6 @@
 from datetime import date, datetime, timedelta, time
+import matplotlib.pyplot as plt
+from time import time as t
 
 from entidades import Paciente, Evento, Atencion, AtencionExterna, AsignacionSemanal
 from random import uniform, normalvariate, choice, seed as rseed
@@ -13,15 +15,21 @@ class CentroKine:
         self.penalizaciones = 0
         self.schedule = []
         self.recursos = CANTIDAD_EQUIPO_PERSONAL_DISPONIBLE
+        self.tiempo_inicio = tiempo_inicio
         self.tiempo_actual = tiempo_inicio
         self.tiempo_fin = tiempo_fin
         self.externas = 0
+        self.pacientes_atendiendose = [0 for i in range(9)]
+        self.pacientes_diarios = [[] for i in range(10)]
+        self.dias = []
 
-        primer_evento = AsignacionSemanal(self.tiempo_actual)
+        primer_evento = AsignacionSemanal(self.tiempo_actual - timedelta(seconds = 1))
         self.agregar_evento(primer_evento)
 
         #ATRIBUTOS PARA ESTADISTICAS
         self.pacientes_listos = []
+        self.pacientes_aceptados = 0
+        self.pacientes_rechazados = 0
 
     def agregar_evento(self, evento):
 
@@ -32,21 +40,52 @@ class CentroKine:
         self.schedule.sort(key=lambda evento: evento.inicio)
 
     def asignacion_semanal(self, pacientes):
+        #Se calculan los porcentaje de saturacion por maquina
+        horas_usadas = [0, 0, 0, 0, 0, 0]
+        una_semana = self.tiempo_actual + timedelta(days = 7)
+
+        for evento in self.schedule:
+            if self.tiempo_actual < evento.inicio < una_semana:
+                for i, m in enumerate(evento.recursos_necesitados):
+                    if m:
+                        horas_usadas[i] += DURACION_SESION[evento.paciente.patologia - 1]
+            elif una_semana <= evento.inicio:
+                break
+        horas_semana = [54, 54, 54, 54, 54, 54]
+        horas_totales = [a * b for a, b in zip(horas_semana, CANTIDAD_EQUIPO_PERSONAL_DISPONIBLE)]
+
+        porcentajes_saturacion = [int(a/b*1000)/10 for a, b in zip(horas_usadas,horas_totales)]
+        print("S",porcentajes_saturacion)
+
+        total_pacientes = sum(self.pacientes_atendiendose)
+        porcentajes_pacientes = [int(a/total_pacientes*1000)/10 if total_pacientes!=0 else 0 for a in self.pacientes_atendiendose]
+        print("P",porcentajes_pacientes)
 
         """SE AGENDAN LAS SESIONES DE LOS NUEVOS PACIENTES
             LLEGADO EN EL LISTADO SEMANAL"""
 
         for paciente in pacientes:
-            #print(F'AGENDANDO PACIENTE {paciente.id}')
-            paciente.ultima_sesion_cumplida = Evento(self.tiempo_actual,self.tiempo_actual)
-            paciente.ultima_sesion_asignada = Evento(self.tiempo_actual,self.tiempo_actual)
-            while paciente.sesiones_asignadas < paciente.cantidad_sesiones:
-                if paciente.ultima_sesion_asignada is None:
-                    hora_inicio = self.tiempo_actual
-                else:
-                    hora_inicio = paciente.ultima_sesion_asignada.final + paciente.tiempo_min
-                hora_inicio = self.check_horario_atencion(hora_inicio, paciente.duracion_sesion)
-                self.asignar_sesion(paciente, hora_inicio, paciente.duracion_sesion)
+            aceptado = True
+            for r, s in zip(paciente.recursos_necesitados, porcentajes_saturacion):
+                if r:
+                    if 95 < s:
+                        aceptado = False
+                        self.pacientes_rechazados+= 1
+                        break
+
+            if aceptado:
+                self.pacientes_aceptados += 1
+                self.pacientes_atendiendose[paciente.patologia - 1] += 1
+                #print(F'AGENDANDO PACIENTE {paciente.id}')
+                paciente.ultima_sesion_cumplida = Evento(self.tiempo_actual,self.tiempo_actual)
+                paciente.ultima_sesion_asignada = Evento(self.tiempo_actual,self.tiempo_actual)
+                while paciente.sesiones_asignadas < paciente.cantidad_sesiones:
+                    if type(paciente.ultima_sesion_asignada) is Evento:
+                        hora_inicio = self.tiempo_actual
+                    else:
+                        hora_inicio = paciente.ultima_sesion_asignada.final + paciente.tiempo_min
+                    hora_inicio = self.check_horario_atencion(hora_inicio, paciente.duracion_sesion)
+                    self.asignar_sesion(paciente, hora_inicio, paciente.duracion_sesion)
 
     #INPUT paciente: Paciente, hora_inicio: datetime, hora_max: datetime
     def asignar_sesion(self, paciente, hora_inicio, duracion):
@@ -148,7 +187,10 @@ class CentroKine:
 
 
     def run(self):
+        start_time = t()
         cambios = True
+        ultimo_dia = self.tiempo_inicio - timedelta(days = 1)
+
         while self.schedule and cambios:
 
             for i, evento in enumerate(self.schedule):
@@ -159,7 +201,6 @@ class CentroKine:
 
                 elif (not evento.cumplido):
                     self.tiempo_actual = evento.inicio
-
                     if type(evento) is AsignacionSemanal:
                         self.asignacion_semanal(evento.lista_pacientes())
                         if self.tiempo_actual + timedelta(days = 7) < self.tiempo_fin:
@@ -174,7 +215,7 @@ class CentroKine:
                         if paciente.ausente():
                             self.reagendar_paciente(paciente, evento.final)
 
-                        elif falla and False:
+                        elif falla:
                             if evento.inicio > paciente.ultima_sesion_cumplida.final + paciente.tiempo_max:
                                 self.penalizaciones += paciente.penalidad
                                 paciente.cantidad_sesiones += paciente.penalidad
@@ -198,6 +239,7 @@ class CentroKine:
                             paciente.ultima_sesion_cumplida = evento
                             if len(paciente.sesiones_cumplidas) == paciente.cantidad_sesiones:
                                 self.pacientes_listos.append(paciente)
+                                self.pacientes_atendiendose[paciente.patologia - 1] -= 1
 
 
                     elif type(evento) is AtencionExterna:
@@ -208,6 +250,7 @@ class CentroKine:
                             paciente.sesiones_cumplidas_externas += 1
                             if len(paciente.sesiones_cumplidas) == paciente.cantidad_sesiones:
                                 self.pacientes_listos.append(paciente)
+                                self.pacientes_atendiendose[paciente.patologia - 1] -= 1
 
 
                     evento.cumplido = True
@@ -216,6 +259,19 @@ class CentroKine:
 
                 else:
                     cambios = False
+
+                if ultimo_dia.date() < self.tiempo_actual.date():
+                    dias = self.tiempo_actual - self.tiempo_inicio
+                    self.dias.append(dias.days)
+                    for i in range(9):
+                        self.pacientes_diarios[i].append(self.pacientes_atendiendose[i])
+                    self.pacientes_diarios[9].append(sum(self.pacientes_atendiendose))
+
+                    ultimo_dia = self.tiempo_actual
+        end_time = t()
+        self.simulation_time = end_time - start_time
+
+
 
     def estadisticas(self):
 
@@ -235,9 +291,9 @@ class CentroKine:
             costos_externo[pat - 1] += COSTO_SESION_EXTERNO[pat - 1] * p.sesiones_cumplidas_externas
             sesiones_externas[pat - 1] += p.sesiones_cumplidas_externas
             sesiones_extra[pat - 1] += p.cantidad_sesiones - NRO_VISITAS[pat - 1]
-            print(f'PACIENTE{p.id} PATOLOGIA{pat}')
-            for evento in p.sesiones_cumplidas:
-                print(evento.inicio, evento.final, evento.id, type(evento))
+            #print(f'PACIENTE{p.id} PATOLOGIA{pat}')
+            #for evento in p.sesiones_cumplidas:
+            #    print(evento.inicio, evento.final, evento.id, type(evento))
 
         print('Pacientes atendidos',pacientes_por_patologia)
         print('Ingresos',ingresos_por_patologia)
@@ -252,3 +308,29 @@ class CentroKine:
         print(utilidad)
 
         print(sum(sesiones_extra), self.penalizaciones)
+        print("Aceptados: ",self.pacientes_aceptados, "Rechazados: ",self.pacientes_rechazados)
+
+        print('se demoro',self.simulation_time,'segundos')
+
+
+        for i in range(9):
+            plt.plot(self.dias, self.pacientes_diarios[i], label = 'pat' + str(i+1))
+        plt.plot(self.dias, self.pacientes_diarios[9], label = 'total')
+
+        plt.xlabel('Tiempo')
+        plt.ylabel('Pacientes')
+        plt.title('Pacientes por patologia a en el tiempo')
+        plt.show()
+
+        
+
+
+
+
+
+
+
+
+
+
+
