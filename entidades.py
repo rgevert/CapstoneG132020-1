@@ -111,7 +111,7 @@ class AsignacionSemanal(Evento):
         super().__init__(hora_inicio, hora_inicio, None)
 
     def lista_pacientes(self):
-        #return [Paciente(1) for i in range(5)]
+        #return [Paciente(3) for i in range(1)]
         lista_pacientes = []
         for i in range(9):
             for j in range(poisson(TASA_LLEGADA_SEMANAL[i])):
