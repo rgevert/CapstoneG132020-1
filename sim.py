@@ -56,11 +56,11 @@ class CentroKine:
         horas_totales = [a * b for a, b in zip(horas_semana, CANTIDAD_EQUIPO_PERSONAL_DISPONIBLE)]
 
         porcentajes_saturacion = [int(a/b*1000)/10 for a, b in zip(horas_usadas,horas_totales)]
-        print("S",porcentajes_saturacion)
+        #print("S",porcentajes_saturacion)
 
         total_pacientes = sum(self.pacientes_atendiendose)
         porcentajes_pacientes = [int(a/total_pacientes*1000)/10 if total_pacientes!=0 else 0 for a in self.pacientes_atendiendose]
-        print("P",porcentajes_pacientes)
+        #print("P",porcentajes_pacientes)
 
         """SE AGENDAN LAS SESIONES DE LOS NUEVOS PACIENTES
             LLEGADO EN EL LISTADO SEMANAL"""
@@ -299,28 +299,28 @@ class CentroKine:
             costos_externo[pat - 1] += COSTO_SESION_EXTERNO[pat - 1] * p.sesiones_cumplidas_externas
             sesiones_externas[pat - 1] += p.sesiones_cumplidas_externas
             sesiones_extra[pat - 1] += p.cantidad_sesiones - NRO_VISITAS[pat - 1]
-            print(f'PACIENTE{p.id} PATOLOGIA{pat}')
+            # print(f'PACIENTE{p.id} PATOLOGIA{pat}')
             for evento in p.sesiones_cumplidas:
                 eventos1.append(evento)
-                print(evento.inicio, evento.final, evento.id, type(evento))
+                # print(evento.inicio, evento.final, evento.id, type(evento))
 
         #self.generar_calendario(eventos1, 5)
-        print('Pacientes atendidos',pacientes_por_patologia)
-        print('Ingresos',ingresos_por_patologia)
-        print('Costos interno',costos_interno)
-        print('Costos externo',costos_externo)
-        print()
-        print('Sesiones externas',sesiones_externas)
-        print('Sesiones extra',sesiones_extra)
-        print(self.externas)
+        # print('Pacientes atendidos',pacientes_por_patologia)
+        # print('Ingresos',ingresos_por_patologia)
+        # print('Costos interno',costos_interno)
+        # print('Costos externo',costos_externo)
+        # print()
+        # print('Sesiones externas',sesiones_externas)
+        # print('Sesiones extra',sesiones_extra)
+        # print(self.externas)
 
         utilidad = sum(ingresos_por_patologia) - sum(costos_interno) - sum(costos_externo)
-        print(utilidad)
+        # print(utilidad)
 
-        print(sum(sesiones_extra), self.penalizaciones)
-        print("Aceptados: ",self.pacientes_aceptados, "Rechazados: ",self.pacientes_rechazados)
+        # print(sum(sesiones_extra), self.penalizaciones)
+        # print("Aceptados: ",self.pacientes_aceptados, "Rechazados: ",self.pacientes_rechazados)
 
-        print('se demoro',self.simulation_time,'segundos')
+        # print('se demoro',self.simulation_time,'segundos')
 
 
         for i in range(9):
@@ -330,7 +330,8 @@ class CentroKine:
         plt.xlabel('Tiempo')
         plt.ylabel('Pacientes')
         plt.title('Pacientes por patologia a en el tiempo')
-        plt.show()
+        # plt.show()
+        return utilidad
 
     def generar_calendario(self, eventos, maquina):
 
@@ -354,7 +355,7 @@ class CentroKine:
             for e2 in agregados:
                 if e2.inicio < e.final and e2.final > e.inicio:
                     maquina += 1
-                    print(maquina)
+                    # print(maquina)
             agregados.append(e)
             room=maquina-0.48
             start=e.inicio.hour+e.inicio.minute/60
