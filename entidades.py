@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from random import uniform, normalvariate, choice, randint, random, seed as rseed
+from random import uniform, normalvariate, choice, randint, random, shuffle, seed as rseed
 from itertools import count
 from numpy.random import poisson, seed as nseed
 
@@ -54,10 +54,13 @@ class Evento:
     def __init__(self, hora_inicio, hora_fin, recursos_necesitados = None):
         self.inicio = hora_inicio
         self.final = hora_fin
+        self.final_original = hora_fin
         self.pasadas = 0
 
         self.cumplido = False
         self.id = next(self.n)
+
+        self.fallo = False
 
         if recursos_necesitados is None:
             self.recursos_necesitados = [0, 0, 0, 0, 0, 0]
@@ -70,21 +73,29 @@ class Atencion(Evento):
     def __init__(self, paciente, hora_inicio, hora_fin):
         super().__init__(hora_inicio, hora_fin, paciente.recursos_necesitados)
         self.paciente = paciente
+        
+
 
     #retorna el numero del equipo que falla y la hora
     def falla(self):
 
-        if random() < PROBA_AUSENTISMO:
-            hora_fin = self.inicio + timedelta(hours = 6)
-            recursos = [0,0,0,0,0,1]
-            return Falla(self.inicio, hora_fin, recursos)
+        rec = [i for i in range(6)]
+        shuffle(rec)
 
-        for equipo, cantidad in enumerate(self.recursos_necesitados[:5]):
-            if cantidad > 0:
-                if random() < PROBA_FALLA_EQUIPO:
+        while rec:
+            equipo = rec.pop(0)
+            if self.recursos_necesitados[equipo] > 0:
+                if equipo < 5 and random() < PROBA_FALLA_EQUIPO:
                     hora_fin = self.inicio + timedelta(hours = 6)
                     recursos = [0,0,0,0,0,0]
                     recursos[equipo] = 1
+                    self.fallo = True
+                    return Falla(self.inicio, hora_fin, recursos)
+
+                elif equipo == 5 and random() < PROBA_AUSENTISMO:
+                    hora_fin = self.inicio + timedelta(hours = 6)
+                    recursos = [0,0,0,0,0,1]
+                    self.fallo = True
                     return Falla(self.inicio, hora_fin, recursos)
 
         return False
@@ -111,7 +122,7 @@ class AsignacionSemanal(Evento):
         super().__init__(hora_inicio, hora_inicio, None)
 
     def lista_pacientes(self):
-        #return [Paciente(1) for i in range(5)]
+        #return [Paciente(3) for i in range(1)]
         lista_pacientes = []
         for i in range(9):
             for j in range(poisson(TASA_LLEGADA_SEMANAL[i])):
