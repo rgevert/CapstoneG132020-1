@@ -2,12 +2,8 @@ from datetime import date, datetime, timedelta, time
 import matplotlib.pyplot as plt
 from time import time as t
 
-<<<<<<< HEAD
-from entidades import Paciente, Evento, Atencion, AtencionExterna, AsignacionSemanal
-=======
 from entidades import Paciente, Evento, Atencion, AtencionExterna, AsignacionSemanal, Falla
 from linkedlist import LinkedList
->>>>>>> 1aa88ebdf9ec3a022901e7c9c4c256ebe1003e33
 from random import randint, uniform, normalvariate, choice, seed as rseed
 from parametros import *
 
@@ -75,16 +71,6 @@ class CentroKine:
             aceptado = True
             for r, s in zip(paciente.recursos_necesitados, porcentajes_saturacion):
                 if r:
-<<<<<<< HEAD
-                    if 90 < s:
-                        aceptado = False
-                        self.pacientes_rechazados+= 1
-                        break
-                    #elif 80 < s <= 95 and self.pacientes_atendiendose[paciente.patologia - 1] > self.alpha[paciente.patologia - 1]:
-                    #    aceptado = False
-                    #    self.pacientes_rechazados+= 1
-                    #    break
-=======
                     if 85 < s:
                         aceptado = False
                         self.pacientes_rechazados+= 1
@@ -95,29 +81,17 @@ class CentroKine:
                         break
                 #if paciente.patologia == 3:
                 #    aceptado = False
->>>>>>> 1aa88ebdf9ec3a022901e7c9c4c256ebe1003e33
 
             if aceptado:
                 self.pacientes_aceptados += 1
                 self.pacientes_atendiendose[paciente.patologia - 1] += 1
                 ##print(F'AGENDANDO PACIENTE {paciente.id}')
                 paciente.ultima_sesion_cumplida = Evento(self.tiempo_actual,self.tiempo_actual)
-<<<<<<< HEAD
-                paciente.ultima_sesion_asignada = Evento(self.tiempo_actual,self.tiempo_actual)
-                for _ in range(paciente.cantidad_sesiones - len(paciente.sesiones_cumplidas)):
-                    if type(paciente.ultima_sesion_asignada) is Evento:
-                        hora_inicio = self.tiempo_actual
-                    else:
-                        hora_inicio = paciente.ultima_sesion_asignada.final + paciente.tiempo_min
-                    hora_inicio = self.check_horario_atencion(hora_inicio, paciente.duracion_sesion)
-                    self.asignar_sesion(paciente, hora_inicio, paciente.duracion_sesion)
-=======
                 n_sesiones = paciente.cantidad_sesiones
                 lista_sesiones = LinkedList(paciente, self.tiempo_actual, n_sesiones, self)
                 for atencion in lista_sesiones:
                     self.agregar_evento(atencion)
                 paciente.ultima_sesion_asignada = atencion
->>>>>>> 1aa88ebdf9ec3a022901e7c9c4c256ebe1003e33
 
     #INPUT paciente: Paciente, hora_inicio: datetime, hora_max: datetime
     def asignar_sesion(self, paciente, hora_inicio, duracion):
@@ -253,13 +227,8 @@ class CentroKine:
                         if paciente.ausente() and False:
                             self.reagendar_paciente(paciente, evento.final)
 
-<<<<<<< HEAD
-                        elif falla and False:
-                            if evento.inicio > paciente.ultima_sesion_cumplida.final + paciente.tiempo_max:
-=======
                         elif False and falla and False:
                             '''if evento.inicio > paciente.ultima_sesion_cumplida.final + paciente.tiempo_max:
->>>>>>> 1aa88ebdf9ec3a022901e7c9c4c256ebe1003e33
                                 self.penalizaciones += paciente.penalidad
                                 paciente.cantidad_sesiones += paciente.penalidad
                             self.agregar_evento(falla)
@@ -360,30 +329,6 @@ class CentroKine:
             costos_externo[pat - 1] += COSTO_SESION_EXTERNO[pat - 1] * p.sesiones_cumplidas_externas
             sesiones_externas[pat - 1] += p.sesiones_cumplidas_externas
             sesiones_extra[pat - 1] += p.cantidad_sesiones - NRO_VISITAS[pat - 1]
-<<<<<<< HEAD
-            # print(f'PACIENTE{p.id} PATOLOGIA{pat}')
-            for evento in p.sesiones_cumplidas:
-                eventos1.append(evento)
-                # print(evento.inicio, evento.final, evento.id, type(evento))
-
-        #self.generar_calendario(eventos1, 5)
-        # print('Pacientes atendidos',pacientes_por_patologia)
-        # print('Ingresos',ingresos_por_patologia)
-        # print('Costos interno',costos_interno)
-        # print('Costos externo',costos_externo)
-        # print()
-        # print('Sesiones externas',sesiones_externas)
-        # print('Sesiones extra',sesiones_extra)
-        # print(self.externas)
-
-        utilidad = sum(ingresos_por_patologia) - sum(costos_interno) - sum(costos_externo)
-        # print(utilidad)
-
-        # print(sum(sesiones_extra), self.penalizaciones)
-        # print("Aceptados: ",self.pacientes_aceptados, "Rechazados: ",self.pacientes_rechazados)
-
-        # print('se demoro',self.simulation_time,'segundos')
-=======
             ##print(f'PACIENTE{p.id} PATOLOGIA{pat}')
             self.chequear_integridad(p)
             for evento in p.sesiones_cumplidas:
@@ -401,15 +346,14 @@ class CentroKine:
         #print(self.externas)
 
         utilidad = sum(ingresos_por_patologia) - sum(costos_interno) - sum(costos_externo)
-        print('se demoro',self.simulation_time,'segundos')
-        print(utilidad)
+        #print('se demoro',self.simulation_time,'segundos')
+        #print(utilidad)
         return utilidad
 
         #print(sum(sesiones_extra), self.penalizaciones)
         #print("Aceptados: ",self.pacientes_aceptados, "Rechazados: ",self.pacientes_rechazados)
 
         
->>>>>>> 1aa88ebdf9ec3a022901e7c9c4c256ebe1003e33
 
 
         """for i in range(9):
@@ -418,11 +362,6 @@ class CentroKine:
 
         plt.xlabel('Tiempo')
         plt.ylabel('Pacientes')
-<<<<<<< HEAD
-        plt.title('Pacientes por patologia a en el tiempo')
-        # plt.show()
-        return utilidad
-=======
         plt.title('Pacientes por patologia a en el tiempo')"""
         plt.show()
 
@@ -448,7 +387,6 @@ class CentroKine:
         #if sesiones_teoricas != sesiones_simulacion:
             #print('ERROR EN P ', p.patologia, sesiones_teoricas, sesiones_simulacion)
 
->>>>>>> 1aa88ebdf9ec3a022901e7c9c4c256ebe1003e33
 
     def generar_calendario(self, eventos, maquina):
 
@@ -458,56 +396,6 @@ class CentroKine:
         days_labels = ['Day 1']
 
         eventos_dia = []
-<<<<<<< HEAD
-        agregados = []
-        una_dia = self.tiempo_inicio + timedelta(days = 1)
-        for evento in eventos:
-            if self.tiempo_inicio < evento.inicio < una_dia and type(evento) is Atencion:
-                if evento.recursos_necesitados[maquina]:
-                    eventos_dia.append(evento)
-        day_label = 'Day 1'
-        fig=plt.figure(figsize=(10,5.89))
-        for e in eventos_dia:
-            event = str(e.paciente.id) + 'Pat: ' + str(e.paciente.patologia)
-            maquina = 1
-            for e2 in agregados:
-                if e2.inicio < e.final and e2.final > e.inicio:
-                    maquina += 1
-                    # print(maquina)
-            agregados.append(e)
-            room=maquina-0.48
-            start=e.inicio.hour+e.inicio.minute/60
-            end=e.final.hour+e.final.minute/60
-            # plot event
-            plt.fill_between([room, room+0.96], [start, start], [end,end], color=colors[e.paciente.patologia-1], alpha=0.7, edgecolor='k', linewidth=0.5)
-            # plot beginning time
-            plt.text(room+0.02, start+0.05 ,'{0}:{1:0>2}'.format(e.inicio.hour,e.inicio.minute), va='top', fontsize=7)
-
-            # plot event name
-            plt.text(room+0.48, (start+end)*0.5, event, ha='center', va='center', fontsize=11)
-
-
-        # Set Axis
-        ax=fig.add_subplot(111)
-        ax.yaxis.grid()
-        ax.set_xlim(0.5,len(rooms)+0.5)
-        ax.set_ylim(19.1, 7.9)
-        ax.set_xticks(range(1,len(rooms)+1))
-        ax.set_xticklabels(rooms)
-        ax.set_ylabel('Time')
-
-        # Set Second Axis
-        ax2=ax.twiny().twinx()
-        ax2.set_xlim(ax.get_xlim())
-        ax2.set_ylim(ax.get_ylim())
-        ax2.set_xticks(ax.get_xticks())
-        ax2.set_xticklabels(rooms)
-        ax2.set_ylabel('Time')
-
-
-        plt.title(day_label,y=1.07)
-        plt.savefig('{0}.png'.format(day_label), dpi=200)
-=======
         
         eventos.sort(key=lambda evento: evento.inicio)
         n_days = (eventos[-1].inicio - eventos[0].inicio).days
@@ -567,7 +455,6 @@ class CentroKine:
                 plt.title(day_label,y=1.07)
                 plt.savefig('{0}.png'.format(day_label), dpi=200)
 
->>>>>>> 1aa88ebdf9ec3a022901e7c9c4c256ebe1003e33
 
 
 
