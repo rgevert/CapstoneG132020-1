@@ -1,6 +1,7 @@
 from datetime import date, datetime, timedelta, time
 import matplotlib.pyplot as plt
 from time import time as t
+from functools import reduce
 
 from entidades import Paciente, Evento, Atencion, AtencionExterna, AsignacionSemanal, Falla
 from linkedlist import LinkedList
@@ -129,23 +130,40 @@ class CentroKine:
                         break
 
     #INPUT paciente: Paciente, inicio:datetime, final: datetime
-    def disponible(self, recursos_necesitados, inicio, final):
-        
+    def disponible(self, recursos_necesitados, inicio, final, revisar_todos = False):    
+
         aux_recursos = self.recursos.copy()
+        eventos_simultaneos = []
 
         for evento in self.schedule:
+            
             if evento.inicio < final and evento.final > inicio:
-                for i, rec in enumerate(evento.recursos_necesitados):
-                    aux_recursos[i] -= rec
-
+                eventos_simultaneos.append(evento)
             if evento.inicio > final:
                 break
 
-        for requerido, disponible in zip(recursos_necesitados, aux_recursos):
-            if disponible < requerido:
-                #print(disponible, requerido)
-                return False
+        for i, rec in enumerate(recursos_necesitados):
 
+            aux_recursos[i] -= rec
+            eventos = []
+            peak = 0
+            tren = []
+            for evento in eventos_simultaneos:
+                if evento.recursos_necesitados[i]:
+                    eventos.append(evento)
+            for e in eventos:
+                tren = list(filter(lambda e1: e1.final > e.inicio, tren))
+                tren.append(e)
+                
+                suma = reduce((lambda s, e2: s + e2.recursos_necesitados[i]), tren, 0)
+                if suma > peak:
+                    
+                    peak = suma
+                    if peak > aux_recursos[i]:
+                        if peak > aux_recursos[i] + 1:
+                            raise Exception("Se exedieron los recursos maximos")
+                        return False
+        
         return True
 
     #INPUT hora: datetime, duracion_sesion: timedelta
@@ -154,23 +172,32 @@ class CentroKine:
         """VERIFICA QUE NO SE AGENDEN HORAS FUERA DE
         HORARIO DE ATENCION Y EN HORA DE COLACION"""
 
+        hora_inicio = hora
+
         #Ver que la hora de inicio y fin sea entre 8 y 18 hrs
-        if time(0,0) < hora.time() < time(8,0) \
-        or 0 <= (hora + duracion_sesion).hour < 8:
+        if time(0,0) < hora.time() and hora.time() < time(8,0):
             hora = hora.replace(hour = 8, minute = 0)
+            if hora < hora_inicio:
+                raise Exception("Volvi al pasado1")
 
         #si empieza o termina despues del cierre
         elif time(18,0) <= hora.time() < time(23,59)\
-            or time(18,0) < (hora + duracion_sesion).time() < time(23,59):
+            or time(18,0) < (hora + duracion_sesion).time() < time(23,59) \
+            or time(0,0) <= (hora + duracion_sesion).time() < time(8,0):
             hora += timedelta(days = 1)
             hora = hora.replace(hour = 8, minute = 0)
+            if hora < hora_inicio:
+                raise Exception("Volvi al pasado2")
 
         #si empieza o termina en hora de colacion (a las 13 hrs?)
         elif time(13,0) <= hora.time() < time(14,0) \
             or time(13,0) < (hora + duracion_sesion).time() <= time(14,0):
             hora = hora.replace(hour = 14, minute = 0)
+            if hora < hora_inicio:
+                raise Exception("Volvi al pasado3")
 
         #OUTPUT hora: datetime
+
         return hora
 
     def check_conflicto(self, evento):
@@ -189,6 +216,12 @@ class CentroKine:
         if conflicto:
             pass
             #self.check_conflicto(evento)
+
+    def hay_conflicto(self, evento):
+        if not self.disponible([0,0,0,0,0,0], evento.inicio, evento.final, True):
+            #self.reagendar_paciente(evento.paciente, evento.inicio)
+            return True
+        return False
 
     def reagendar_paciente(self, paciente, hora_inicio):
 
@@ -226,6 +259,7 @@ class CentroKine:
                             self.agregar_evento(AsignacionSemanal(nueva_asignacion, self.tiempo_actual.day))
 
                     elif type(evento) is Atencion:
+
                         paciente = evento.paciente
                         paciente.sesiones_atendidas += 1
                         #falla = evento.falla()
@@ -233,7 +267,7 @@ class CentroKine:
                         if paciente.ausente():
                             self.reagendar_paciente(paciente, evento.final)
 
-                        elif False and falla and False:
+                        elif False and falla:
                             '''if evento.inicio > paciente.ultima_sesion_cumplida.final + paciente.tiempo_max:
                                 self.penalizaciones += paciente.penalidad
                                 paciente.cantidad_sesiones += paciente.penalidad
@@ -263,7 +297,11 @@ class CentroKine:
                             
                         else:
                             #evento.actualizar_duracion()
-                            self.check_conflicto(evento)
+                            if self.hay_conflicto(evento):
+                                print('conflicto', evento.inicio)
+                                evento.cumplido = True
+                                cambios = True
+                                break
                             if evento.inicio > paciente.ultima_sesion_cumplida.final_original + paciente.tiempo_max:
                                 self.penalizaciones += paciente.penalidad
                                 paciente.cantidad_sesiones += paciente.penalidad
@@ -357,7 +395,7 @@ class CentroKine:
 
         utilidad = sum(ingresos_por_patologia) - sum(costos_interno) - sum(costos_externo)
         #print('se demoro',self.simulation_time,'segundos')
-        #print(utilidad)
+        print(utilidad)
         return utilidad #, self.llenado_sistema
 
         #print(sum(sesiones_extra), self.penalizaciones)
