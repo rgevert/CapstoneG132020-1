@@ -6,8 +6,8 @@ from entidades import Paciente, Evento, Atencion, AtencionExterna, AsignacionSem
 from linkedlist import LinkedList
 from random import randint, uniform, normalvariate, choice, seed as rseed
 from parametros import *
+import matplotlib.pyplot as plt
 
-#rseed(0)
 
 class CentroKine:
 
@@ -21,11 +21,13 @@ class CentroKine:
         self.tiempo_fin = tiempo_fin
         self.alpha = alpha
         self.externas = 0
+        self.llenado_sistema = []
+        self.activaciones_alfa = []
         self.pacientes_atendiendose = [0 for i in range(9)]
         self.pacientes_diarios = [[] for i in range(10)]
         self.dias = []
 
-        primer_evento = AsignacionSemanal(self.tiempo_actual- timedelta(seconds = 1))
+        primer_evento = AsignacionSemanal(self.tiempo_actual- timedelta(seconds = 1), 0)
         self.agregar_evento(primer_evento)
         self.agregar_evento(Falla(self.tiempo_actual + timedelta(days = 4), self.tiempo_actual + timedelta(days = 4) + timedelta(hours = 7), [5,0,0,0,0,0]))
 
@@ -57,7 +59,7 @@ class CentroKine:
         horas_semana = [54, 54, 54, 54, 54, 54]
         horas_totales = [a * b for a, b in zip(horas_semana, CANTIDAD_EQUIPO_PERSONAL_DISPONIBLE)]
 
-        porcentajes_saturacion = [int(a/b*1000)/10 for a, b in zip(horas_usadas,horas_totales)]
+        porcentajes_saturacion = [int(a/b*1000)/10 for a, b in zip(horas_usadas, horas_totales)]
         #print("S",porcentajes_saturacion)
 
         total_pacientes = sum(self.pacientes_atendiendose)
@@ -71,11 +73,13 @@ class CentroKine:
             aceptado = True
             for r, s in zip(paciente.recursos_necesitados, porcentajes_saturacion):
                 if r:
-                    if 85 < s:
+                    #print(s)
+                    if 80 < s:
                         aceptado = False
                         self.pacientes_rechazados+= 1
                         break
-                    elif 55 < s <= 85 and self.pacientes_atendiendose[paciente.patologia - 1] > self.alpha[paciente.patologia - 1]:
+                    elif 50 < s <= 80 and self.pacientes_atendiendose[paciente.patologia - 1] > self.alpha[paciente.patologia - 1]:
+                        #self.activaciones_alfa[paciente.patologia - 1] += 1
                         aceptado = False
                         self.pacientes_rechazados+= 1
                         break
@@ -85,6 +89,7 @@ class CentroKine:
             if aceptado:
                 self.pacientes_aceptados += 1
                 self.pacientes_atendiendose[paciente.patologia - 1] += 1
+                self.llenado_sistema.append((sum(self.pacientes_atendiendose), self.tiempo_actual))
                 ##print(F'AGENDANDO PACIENTE {paciente.id}')
                 paciente.ultima_sesion_cumplida = Evento(self.tiempo_actual,self.tiempo_actual)
                 n_sesiones = paciente.cantidad_sesiones
@@ -182,7 +187,8 @@ class CentroKine:
                         ##print('conflicto', evento2.paciente.id, evento2.paciente.patologia)
                         break
         if conflicto:
-            self.check_conflicto(evento)
+            pass
+            #self.check_conflicto(evento)
 
     def reagendar_paciente(self, paciente, hora_inicio):
 
@@ -217,14 +223,14 @@ class CentroKine:
                         self.asignacion_semanal(evento.lista_pacientes())
                         if self.tiempo_actual + timedelta(days = 7) < self.tiempo_fin:
                             nueva_asignacion = self.tiempo_actual + timedelta(days = 7)
-                            self.agregar_evento(AsignacionSemanal(nueva_asignacion))
+                            self.agregar_evento(AsignacionSemanal(nueva_asignacion, self.tiempo_actual.day*100))
 
                     elif type(evento) is Atencion:
                         paciente = evento.paciente
                         paciente.sesiones_atendidas += 1
                         #falla = evento.falla()
 
-                        if paciente.ausente() and False:
+                        if paciente.ausente():
                             self.reagendar_paciente(paciente, evento.final)
 
                         elif False and falla and False:
@@ -276,6 +282,7 @@ class CentroKine:
                             if len(paciente.sesiones_cumplidas) == paciente.cantidad_sesiones:
                                 self.pacientes_listos.append(paciente)
                                 self.pacientes_atendiendose[paciente.patologia - 1] -= 1
+                                self.llenado_sistema.append((sum(self.pacientes_atendiendose), self.tiempo_actual))
 
 
                     elif type(evento) is AtencionExterna:
@@ -287,6 +294,7 @@ class CentroKine:
                             if len(paciente.sesiones_cumplidas) == paciente.cantidad_sesiones:
                                 self.pacientes_listos.append(paciente)
                                 self.pacientes_atendiendose[paciente.patologia - 1] -= 1
+                                self.llenado_sistema.append((sum(self.pacientes_atendiendose), self.tiempo_actual))
 
 
                     evento.cumplido = True
@@ -348,7 +356,7 @@ class CentroKine:
         utilidad = sum(ingresos_por_patologia) - sum(costos_interno) - sum(costos_externo)
         #print('se demoro',self.simulation_time,'segundos')
         #print(utilidad)
-        return utilidad
+        return utilidad  #, self.llenado_sistema
 
         #print(sum(sesiones_extra), self.penalizaciones)
         #print("Aceptados: ",self.pacientes_aceptados, "Rechazados: ",self.pacientes_rechazados)
@@ -455,6 +463,23 @@ class CentroKine:
                 plt.title(day_label,y=1.07)
                 plt.savefig('{0}.png'.format(day_label), dpi=200)
 
+
+if __name__ == "__main__":
+    alpha = [100, 100, 100, 100, 100, 100, 100, 100, 100]
+    inicio = datetime(2020, 1, 1, 8)
+    fin = inicio + timedelta(days=90)
+    sim = CentroKine(inicio, fin, alpha)
+    sim.run()
+    ut, pacientes_tot = sim.estadisticas()
+    print(ut)
+    Y = []
+    X = []
+    for a,b in pacientes_tot:
+        Y.append(a)
+        X.append(b)
+    plt.plot(X,Y)
+    plt.show()
+    
 
 
 
