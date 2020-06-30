@@ -40,15 +40,14 @@ class Paciente:
         self.penalidad = PENALIDAD_SESION_FUERA_DE_PLAZO[patologia - 1]
 
     def ausente(self):
-        rseed(10)
         proba = random()
+        proba = 0.2
         if len(self.sesiones_cumplidas) < 5:
             return proba < AUSENTISMO_HASTA_5
         elif len(self.sesiones_cumplidas) <= 13:
             return proba < AUSENTISMO_5_A_13
         else:
             return proba < AUSENTISMO_DESDE_14
-
 
 class Evento:
     n = count(start = 0)
@@ -72,15 +71,15 @@ class Evento:
 
 class Atencion(Evento):
 
-    def __init__(self, paciente, hora_inicio, hora_fin):
+    def __init__(self, paciente, hora_inicio, hora_fin, seed):
         super().__init__(hora_inicio, hora_fin, paciente.recursos_necesitados)
         self.paciente = paciente
+        self.seed = seed
         
 
 
     #retorna el numero del equipo que falla y la hora
     def falla(self):
-        rseed(10)
         rec = [i for i in range(6)]
         shuffle(rec)
 
@@ -105,7 +104,6 @@ class Atencion(Evento):
 
 
     def actualizar_duracion(self):
-        rseed(10)
         variacion = VAR_DURACION_SESION[self.paciente.patologia - 1]
         duracion = DURACION_SESION[self.paciente.patologia - 1]*(1-variacion/2)*60*60
         duracion += random()*variacion*60*60

@@ -4,7 +4,7 @@ from time import time as t
 
 from entidades import Paciente, Evento, Atencion, AtencionExterna, AsignacionSemanal, Falla
 from linkedlist import LinkedList
-from random import randint, uniform, normalvariate, choice, seed as rseed
+from random import randint, uniform, normalvariate, choice
 from parametros import *
 import matplotlib.pyplot as plt
 
@@ -22,14 +22,14 @@ class CentroKine:
         self.alpha = alpha
         self.externas = 0
         self.llenado_sistema = []
-        self.activaciones_alfa = []
+        self.activaciones_alfa = [0 for _ in range(9)]
         self.pacientes_atendiendose = [0 for i in range(9)]
         self.pacientes_diarios = [[] for i in range(10)]
         self.dias = []
 
         primer_evento = AsignacionSemanal(self.tiempo_actual- timedelta(seconds = 1), 0)
         self.agregar_evento(primer_evento)
-        self.agregar_evento(Falla(self.tiempo_actual + timedelta(days = 4), self.tiempo_actual + timedelta(days = 4) + timedelta(hours = 7), [5,0,0,0,0,0]))
+        self.agregar_evento(Falla(self.tiempo_actual + timedelta(days=4), self.tiempo_actual + timedelta(days = 4) + timedelta(hours = 7), [5,0,0,0,0,0]))
 
         #ATRIBUTOS PARA ESTADISTICAS
         self.pacientes_listos = []
@@ -78,8 +78,8 @@ class CentroKine:
                         aceptado = False
                         self.pacientes_rechazados+= 1
                         break
-                    elif 50 < s <= 80 and self.pacientes_atendiendose[paciente.patologia - 1] > self.alpha[paciente.patologia - 1]:
-                        #self.activaciones_alfa[paciente.patologia - 1] += 1
+                    elif 30 < s <= 80 and self.pacientes_atendiendose[paciente.patologia - 1] > self.alpha[paciente.patologia - 1]:
+                        self.activaciones_alfa[paciente.patologia - 1] += 1
                         aceptado = False
                         self.pacientes_rechazados+= 1
                         break
@@ -118,7 +118,7 @@ class CentroKine:
             if self.disponible(paciente.recursos_necesitados, hora, hora + duracion):
                 sesion_asignada = True
                 paciente.sesiones_asignadas += 1
-                atencion = Atencion(paciente, hora, hora + duracion)
+                atencion = Atencion(paciente, hora, hora + duracion, self.tiempo_actual)
                 self.agregar_evento(atencion)
                 paciente.ultima_sesion_asignada = atencion
             else:
@@ -223,7 +223,7 @@ class CentroKine:
                         self.asignacion_semanal(evento.lista_pacientes())
                         if self.tiempo_actual + timedelta(days = 7) < self.tiempo_fin:
                             nueva_asignacion = self.tiempo_actual + timedelta(days = 7)
-                            self.agregar_evento(AsignacionSemanal(nueva_asignacion, self.tiempo_actual.day*100))
+                            self.agregar_evento(AsignacionSemanal(nueva_asignacion, self.tiempo_actual.day))
 
                     elif type(evento) is Atencion:
                         paciente = evento.paciente
@@ -353,10 +353,12 @@ class CentroKine:
         #print('Sesiones extra',sesiones_extra)
         #print(self.externas)
 
+        alfa_mas_activo = max(self.activaciones_alfa)
+
         utilidad = sum(ingresos_por_patologia) - sum(costos_interno) - sum(costos_externo)
         #print('se demoro',self.simulation_time,'segundos')
         #print(utilidad)
-        return utilidad  #, self.llenado_sistema
+        return utilidad #, self.llenado_sistema
 
         #print(sum(sesiones_extra), self.penalizaciones)
         #print("Aceptados: ",self.pacientes_aceptados, "Rechazados: ",self.pacientes_rechazados)
@@ -470,15 +472,15 @@ if __name__ == "__main__":
     fin = inicio + timedelta(days=90)
     sim = CentroKine(inicio, fin, alpha)
     sim.run()
-    ut, pacientes_tot = sim.estadisticas()
+    ut= sim.estadisticas()
     print(ut)
-    Y = []
-    X = []
-    for a,b in pacientes_tot:
-        Y.append(a)
-        X.append(b)
-    plt.plot(X,Y)
-    plt.show()
+    # Y = []
+    # X = []
+    # for a,b in pacientes_tot:
+    #     Y.append(a)
+    #     X.append(b)
+    # plt.plot(X,Y)
+    # plt.show()
     
 
 

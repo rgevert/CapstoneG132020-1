@@ -8,6 +8,7 @@ class Node:
 		self.atencion = None
 		self.next = None
 		self.prev = None
+		
 
 
 	def asignar(self, hora_inicio):
@@ -21,7 +22,7 @@ class Node:
 
 			if hora >= self.prev.atencion.final + duracion + self.paciente.tiempo_max and self.kine.disponible(self.paciente.recursos_necesitados, hora, hora + duracion):
 				
-				atencion = Atencion(self.paciente, hora, hora + duracion)
+				atencion = Atencion(self.paciente, hora, hora + duracion, self.paciente.patologia)
 				#print('intenando agendar ', self.i, ' en ', hora)
 				if self.prev and self.prev.ajustar(atencion):
 					self.atencion = atencion
@@ -33,7 +34,7 @@ class Node:
 			if self.kine.disponible(self.paciente.recursos_necesitados, hora, hora + duracion):
 				sesion_asignada = True
 				#print(self.i)
-				self.atencion = Atencion(self.paciente, hora, hora + duracion)
+				self.atencion = Atencion(self.paciente, hora, hora + duracion, self.paciente.patologia)
 			else:
 				for evento in self.kine.schedule:
 					if evento.final > hora:
@@ -69,7 +70,7 @@ class Node:
 				if type(self.atencion) is AtencionExterna:
 					tentativa = AtencionExterna(self.paciente, hora, hora + duracion)
 				else:
-					tentativa = Atencion(self.paciente, hora, hora + duracion)
+					tentativa = Atencion(self.paciente, hora, hora + duracion, self.paciente.patologia)
 					#print('tentativa',tentativa.inicio)
 				if tentativa.inicio <= self.prev.atencion.final + self.paciente.tiempo_max:
 					#print('perfecto')

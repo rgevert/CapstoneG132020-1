@@ -2,7 +2,7 @@ import numpy as np
 import scipy.stats as st
 import matplotlib.pyplot as plt
 from PyQt5.QtCore import Qt, pyqtSignal, QObject
-from random import randint
+from random import randint, seed
 from sim import CentroKine
 from datetime import datetime, timedelta
 from dask import delayed
@@ -15,7 +15,7 @@ class Validar(QObject):
     senal_terminar = pyqtSignal(dict)
     senal_partir_simulacion = pyqtSignal(tuple)
 
-    def __init__(self, alfa_0, var, iteraciones_busqueda_alfas, iteraciones_validacion_alfas):
+    def __init__(self, alfa_0, var, iteraciones_busqueda_alfas, iteraciones_validacion_alfas, iteraciones_igual_res):
         super().__init__()
         self.alfa_0 = alfa_0
         self.var = var
@@ -26,6 +26,8 @@ class Validar(QObject):
         self.intervao_malo = None
         self.intervalo_todos = None
         self.confianza_intervalos = 0.95
+        self.iteraciones_igual_res = iteraciones_igual_res
+        self.iteracion_busqueda = 0
 
     def set_parametros(self, parametros):
         self.alfa_0 = parametros[0]
@@ -86,10 +88,14 @@ class Validar(QObject):
         malas_utilidades = [(mala_ut, mal_alfa)]
         todas_las_utilidades = [incumbent_ut]
         iteracion = 0
-        while iteracion < self.iteraciones_busqueda_alfas:
-            
-            alfas = [self.nuevo_alpha(mejor_alfa) for _ in range(5)]
-            
+        maximo_igual = 0
+        minimo_igual = 0
+        pond = 1
+        while iteracion < self.iteraciones_busqueda_alfas and maximo_igual < self.iteraciones_igual_res:
+            seed()
+            print(maximo_igual, self.iteraciones_igual_res, incumbent_ut)
+            alfas = [self.nuevo_alpha(mejor_alfa, pond) for _ in range(5)]
+            print(alfas)
             utilidades = []
             for alpha in alfas:
                 ut = self.calcular_utilidad(alpha)
@@ -104,58 +110,82 @@ class Validar(QObject):
                 mala_ut = peor_utilidad
                 mal_alfa = peor_alfa
                 malas_utilidades.append((mala_ut, mal_alfa))
+                minimo_igual = 0
             if mejor_utilidad > incumbent_ut:
                 incumbent_ut = mejor_utilidad
                 incumbent_alfa = mejor_alfa
                 nova_ut.append((incumbent_ut, incumbent_alfa))
-            iteracion += 1
-            print(iteracion)
-            self.senal_actualizar_avance.emit(('CALCULANDO ALFA ÓPTIMO Y PEOR...', iteracion))
-            self.ut_buena = incumbent_ut
-            self.alfa_bueno = incumbent_alfa
-            self.ut_mala = mala_ut
-            self.alfa_malo = mal_alfa
-            self.mejores_utilidades = nova_ut
-            self.peores_utilidades = malas_utilidades
-            self.intervalo_todas_las_ut = st.norm.interval(self.confianza_intervalos, loc=np.mean(todas_las_utilidades), scale=st.gstd(todas_las_utilidades))
+                maximo_igual = 0
+            maximo_igual += 1
+            self.iteracion_busqueda += 1
+            print(self.iteracion_busqueda)
+            if maximo_igual < self.iteraciones_igual_res*0.5:
+                pond = 1
+            if maximo_igual >= self.iteraciones_igual_res*0.25:
+                pond = 2
+            elif maximo_igual >= self.iteraciones_igual_res*0.25:
+                pond = 3
+            elif maximo_igual >= self.iteraciones_igual_res*0.75:
+                pond = 4
+        self.senal_actualizar_avance.emit(('CALCULANDO ALFA ÓPTIMO Y PEOR...', iteracion))
+        self.ut_buena = incumbent_ut
+        self.alfa_bueno = incumbent_alfa
+        self.ut_mala = mala_ut
+        self.alfa_malo = mal_alfa
+        self.mejores_utilidades = nova_ut
+        self.peores_utilidades = malas_utilidades
+        self.intervalo_todas_las_ut = st.norm.interval(self.confianza_intervalos, loc=np.mean(todas_las_utilidades), scale=st.gstd(todas_las_utilidades))
 
     def calcular_utilidad(self, alpha):
-        paso = True
-        while paso:
-            try:
-                inicio = datetime(2020, 1, 1, 8)
-                fin = inicio + timedelta(days=90)
-                sim = CentroKine(inicio, fin, alpha)
-                sim.run()
-                ut = sim.estadisticas()
-                paso = False
-            except:
-                pass
+        inicio = datetime(2020, 1, 1, 8)
+        fin = inicio + timedelta(days=90)
+        sim = CentroKine(inicio, fin, alpha)
+        sim.run()
+        ut = sim.estadisticas()
         return ut
 
-    def nuevo_alpha(self, alpha):
+    def nuevo_alpha(self, alpha, pond):
 
         primero = randint(0, 8)
         segundo = randint(0, 8)
+        tercero = randint(0, 8)
 
         alfa = alpha.copy()
-
-        if primero == segundo:
-            while primero == segundo:
-                segundo = randint(0, 8)
-        if alfa[segundo] >= self.var:
-            alfa[primero] += self.var
-            alfa[segundo] -= self.var
+        mas = randint(0, 5)
+        if mas == 0 and alfa[primero] >= self.var*pond:
+            alfa[primero] -= self.var*pond
+            alfa[segundo] += self.var*pond
+            alfa[tercero] += self.var*pond
+        elif mas == 1:            
+            alfa[primero] += self.var*pond
+            alfa[segundo] += self.var*pond
+            alfa[tercero] += self.var*pond
+        elif mas == 2 and alfa[segundo] >= self.var*pond and alfa[tercero] >= self.var*pond and alfa[primero] >= self.var*pond:            
+            alfa[primero] -= self.var*pond
+            alfa[segundo] -= self.var*pond
+            alfa[tercero] -= self.var*pond
+        elif mas == 3 and alfa[segundo] >= self.var*pond:
+            alfa[primero] += self.var*pond
+            alfa[segundo] -= self.var*pond
+            alfa[tercero] += self.var*pond
+        elif mas == 4 and alfa[tercero] >= self.var*pond:
+            alfa[primero] += self.var*pond
+            alfa[segundo] += self.var*pond
+            alfa[tercero] -= self.var*pond
+        elif mas == 5 and alfa[segundo] >= self.var*pond and alfa[tercero] >= self.var*pond:
+            alfa[primero] += self.var*pond
+            alfa[segundo] -= self.var*pond
+            alfa[tercero] -= self.var*pond
         else:
-            self.nuevo_alpha(alfa)
+            self.nuevo_alpha(alfa, pond)
         return alfa
 
 
 if __name__ == "__main__":
     start = time.time()
-    v = Validar([10, 10, 10, 10, 10, 10, 10, 10, 10], 1, 100, 100)
+    v = Validar([5, 5, 5, 5, 5, 5, 5, 5, 5], 1, 10000, 2, 150)
     v.comparacion_utilidadades()
-    print(f'AlFA ÓPTIMO = {v.alfa_bueno}, UT = {v.ut_buena}\nALFA MALO = {v.alfa_malo}, UT = {v.ut_mala}')
+    print(f'AlFA ÓPTIMO = {v.alfa_bueno}, UT = {v.ut_buena}\nALFA MALO = {v.alfa_malo}, UT = {v.ut_mala}\n{v.iteracion_busqueda} iteraciones')
     print(f'Intervalo con mejor alfa = {v.alfa_bueno}\n{v.intervalo_bueno}\nIntervalo con peor alfa = {v.alfa_malo}\n{v.intervalo_malo}\nIntervalo de todas las utilidades\n{v.intervalo_todas_las_ut}')
     print(f'se demoró {time.time() - start}s')
     plt.plot(v.maximos)
