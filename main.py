@@ -1,23 +1,13 @@
-from ventanas import VentanaInicio, VentanaResultados, VentanaSimulando
-from validar_alpha import Validar
-import sys
-from PyQt5.QtWidgets import QApplication
+from sim import CentroKine
+from datetime import datetime, timedelta
+from parametros import *
 
-if __name__ == "__main__":
 
-    def hook(type, value, traceback):
-        print(type)
-        print(traceback)
-    sys.__excepthook__ = hook
-
-    a = QApplication(sys.argv)
-    ventana_inicio = VentanaInicio()
-    ventana_simulando = VentanaSimulando()
-    ventana_res = VentanaResultados()
-    validar = Validar()
-
-    ventana_inicio.senal_sim.connect(validar.set_parametros)
-    validar.senal_terminar.connect(ventana_res.mostrar)
-
-    ventana_inicio.show()
-    sys.exit(a.exec())
+if __name__ == '__main__':
+    inicio = datetime(2020,1,1,8)
+    fin = inicio + timedelta(days = 90)
+    alpha = [0 for i in range(9)]
+    alpha[1] = 0.2
+    sim = CentroKine(inicio, fin, alpha)
+    sim.run()
+    sim.estadisticas()

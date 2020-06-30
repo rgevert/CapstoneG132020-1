@@ -45,6 +45,7 @@ class CentroKine:
         self.schedule.sort(key=lambda evento: evento.inicio)
 
     def asignacion_semanal(self, pacientes):
+        print('semana')
         #Se calculan los porcentaje de saturacion por maquina
         horas_usadas = [0, 0, 0, 0, 0, 0]
         una_semana = self.tiempo_actual + timedelta(days = 7)
@@ -86,17 +87,19 @@ class CentroKine:
                 #if paciente.patologia == 3:
                 #    aceptado = False
 
-            if aceptado:
+            if True:
                 self.pacientes_aceptados += 1
                 self.pacientes_atendiendose[paciente.patologia - 1] += 1
-                self.llenado_sistema.append((sum(self.pacientes_atendiendose), self.tiempo_actual))
-                ##print(F'AGENDANDO PACIENTE {paciente.id}')
+                #print(F'AGENDANDO PACIENTE {paciente.id}')
                 paciente.ultima_sesion_cumplida = Evento(self.tiempo_actual,self.tiempo_actual)
-                n_sesiones = paciente.cantidad_sesiones
-                lista_sesiones = LinkedList(paciente, self.tiempo_actual, n_sesiones, self)
-                for atencion in lista_sesiones:
-                    self.agregar_evento(atencion)
-                paciente.ultima_sesion_asignada = atencion
+                paciente.ultima_sesion_asignada = Evento(self.tiempo_actual,self.tiempo_actual)
+                while paciente.sesiones_asignadas < paciente.cantidad_sesiones:
+                    if type(paciente.ultima_sesion_asignada) is Evento:
+                        hora_inicio = self.tiempo_actual
+                    else:
+                        hora_inicio = paciente.ultima_sesion_asignada.final + paciente.tiempo_min
+                    hora_inicio = self.check_horario_atencion(hora_inicio, paciente.duracion_sesion)
+                    self.asignar_sesion(paciente, hora_inicio, paciente.duracion_sesion)
 
     #INPUT paciente: Paciente, hora_inicio: datetime, hora_max: datetime
     def asignar_sesion(self, paciente, hora_inicio, duracion):
@@ -197,11 +200,11 @@ class CentroKine:
         paciente.ultima_sesion_asignada = None
         paciente.sesiones_asignadas = 0
 
-        n_sesiones = paciente.cantidad_sesiones - len(paciente.sesiones_cumplidas)
-        lista_sesiones = LinkedList(paciente, hora_inicio, n_sesiones, self)
-        for atencion in lista_sesiones:
-            self.agregar_evento(atencion)
-        paciente.ultima_sesion_asignada = atencion
+        for _ in range(paciente.cantidad_sesiones - len(paciente.sesiones_cumplidas)):
+                if paciente.ultima_sesion_asignada is not None:
+                    hora_inicio = paciente.ultima_sesion_asignada.final + paciente.tiempo_min
+                hora_inicio = self.check_horario_atencion(hora_inicio, paciente.duracion_sesion)
+                self.asignar_sesion(paciente, hora_inicio, paciente.duracion_sesion)
 
 
     def run(self):
@@ -355,7 +358,7 @@ class CentroKine:
 
         utilidad = sum(ingresos_por_patologia) - sum(costos_interno) - sum(costos_externo)
         #print('se demoro',self.simulation_time,'segundos')
-        #print(utilidad)
+        print(utilidad)
         return utilidad  #, self.llenado_sistema
 
         #print(sum(sesiones_extra), self.penalizaciones)
