@@ -5,7 +5,7 @@ from numpy.random import poisson, seed as nseed
 
 from parametros import *
 
-#rseed(0)
+
 #nseed(0)
 
 class Paciente:
@@ -40,12 +40,14 @@ class Paciente:
         self.penalidad = PENALIDAD_SESION_FUERA_DE_PLAZO[patologia - 1]
 
     def ausente(self):
+        rseed(10)
+        proba = random()
         if len(self.sesiones_cumplidas) < 5:
-            return random() < AUSENTISMO_HASTA_5
+            return proba < AUSENTISMO_HASTA_5
         elif len(self.sesiones_cumplidas) <= 13:
-            return random() < AUSENTISMO_5_A_13
+            return proba < AUSENTISMO_5_A_13
         else:
-            return random() < AUSENTISMO_DESDE_14
+            return proba < AUSENTISMO_DESDE_14
 
 
 class Evento:
@@ -78,7 +80,7 @@ class Atencion(Evento):
 
     #retorna el numero del equipo que falla y la hora
     def falla(self):
-
+        rseed(10)
         rec = [i for i in range(6)]
         shuffle(rec)
 
@@ -103,6 +105,7 @@ class Atencion(Evento):
 
 
     def actualizar_duracion(self):
+        rseed(10)
         variacion = VAR_DURACION_SESION[self.paciente.patologia - 1]
         duracion = DURACION_SESION[self.paciente.patologia - 1]*(1-variacion/2)*60*60
         duracion += random()*variacion*60*60
@@ -118,14 +121,19 @@ class AtencionExterna(Evento):
 
 class AsignacionSemanal(Evento):
 
-    def __init__(self, hora_inicio):
+    def __init__(self, hora_inicio, seed):
         super().__init__(hora_inicio, hora_inicio, None)
+        self.seed = seed
 
     def lista_pacientes(self):
         #return [Paciente(3) for i in range(1)]
+        rseed(self.seed)
+        cantidad_pacientes = [int(uniform(0, 4.75)), int(uniform(0, 4)), int(uniform(0.45, 4.34)),
+                              int(uniform(0, 2.89)), int(uniform(0, 5)), int(uniform(0.35, 4.44)),
+                              int(uniform(0, 5.28)), int(uniform(0, 4.24)), int(uniform(0, 4.12))]
         lista_pacientes = []
-        for i in range(9):
-            for j in range(poisson(TASA_LLEGADA_SEMANAL[i])):
+        for i, cant in enumerate(cantidad_pacientes):
+            for _ in range(cant):
                 lista_pacientes.append(Paciente(i+1))
         return lista_pacientes
 
