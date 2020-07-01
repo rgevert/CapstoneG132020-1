@@ -262,12 +262,12 @@ class CentroKine:
 
                         paciente = evento.paciente
                         paciente.sesiones_atendidas += 1
-                        #falla = evento.falla()
+                        falla = evento.falla()
 
                         if paciente.ausente():
                             self.reagendar_paciente(paciente, evento.final)
 
-                        elif False and falla:
+                        elif falla:
                             '''if evento.inicio > paciente.ultima_sesion_cumplida.final + paciente.tiempo_max:
                                 self.penalizaciones += paciente.penalidad
                                 paciente.cantidad_sesiones += paciente.penalidad
@@ -298,7 +298,7 @@ class CentroKine:
                         else:
                             #evento.actualizar_duracion()
                             if self.hay_conflicto(evento):
-                                print('conflicto', evento.inicio)
+                                #print('conflicto', evento.inicio)
                                 evento.cumplido = True
                                 cambios = True
                                 break
@@ -364,12 +364,14 @@ class CentroKine:
         utilidad_por_patologia = [0,0,0,0,0,0,0,0,0]
         sesiones_externas = [0,0,0,0,0,0,0,0,0]
         sesiones_extra = [0,0,0,0,0,0,0,0,0]
+        sesiones_internas = [0,0,0,0,0,0,0,0,0]
 
         eventos1 = []
 
         for p in self.pacientes_listos:
             pat = p.patologia
             pacientes_por_patologia[pat - 1] += 1
+            sesiones_internas[pat - 1] += p.sesiones_atendidas
             ingresos_por_patologia[pat - 1] += GANANCIA_POR_TRATAMIENTO[pat - 1]
             costos_interno[pat - 1] += COSTO_SESION_INTERNO[pat - 1] * p.sesiones_atendidas
             costos_externo[pat - 1] += COSTO_SESION_EXTERNO[pat - 1] * p.sesiones_cumplidas_externas
@@ -395,8 +397,7 @@ class CentroKine:
 
         utilidad = sum(ingresos_por_patologia) - sum(costos_interno) - sum(costos_externo)
         #print('se demoro',self.simulation_time,'segundos')
-        print(utilidad)
-        return utilidad #, self.llenado_sistema
+        return utilidad, self.llenado_sistema, self.pacientes_rechazados, sum(sesiones_internas),sum(sesiones_extra), sum(sesiones_externas) #, self.llenado_sistema
 
         #print(sum(sesiones_extra), self.penalizaciones)
         #print("Aceptados: ",self.pacientes_aceptados, "Rechazados: ",self.pacientes_rechazados)
@@ -505,20 +506,23 @@ class CentroKine:
 
 
 if __name__ == "__main__":
-    alpha = [100, 100, 100, 100, 100, 100, 100, 100, 100]
+    alpha = [11, 11, 6, 7, 5, 4, 9, 1, 11]
     inicio = datetime(2020, 1, 1, 8)
     fin = inicio + timedelta(days=90)
     sim = CentroKine(inicio, fin, alpha)
     sim.run()
-    ut= sim.estadisticas()
-    print(ut)
-    # Y = []
-    # X = []
-    # for a,b in pacientes_tot:
-    #     Y.append(a)
-    #     X.append(b)
-    # plt.plot(X,Y)
-    # plt.show()
+    ut, pacientes_tot, pacientes_rechazados, sesiones_extra, sesiones_internas,sesiones_externas= sim.estadisticas()
+    print(ut, pacientes_rechazados, sesiones_extra, sesiones_internas,sesiones_externas)
+    Y = []
+    X = []
+    for a,b in pacientes_tot:
+        Y.append(a)
+        X.append(b)
+    plt.plot(X,Y)
+    plt.title('Pacientes en el sistema')
+    plt.xlabel('Tiempo')
+    plt.ylabel('Pacientes')
+    plt.show()
     
 
 

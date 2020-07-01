@@ -41,7 +41,6 @@ class Paciente:
 
     def ausente(self):
         proba = random()
-        proba = 0.2
         if len(self.sesiones_cumplidas) < 5:
             return proba < AUSENTISMO_HASTA_5
         elif len(self.sesiones_cumplidas) <= 13:
