@@ -1,6 +1,7 @@
 # CapstoneG132020-1
 
-El trabajo realizado esta dividido entre diferentes modulos, segun distintas etapas del proeycto.
+El trabajo realizado esta dividido entre diferentes modulos, segun distintas etapas del proeycto.  
+
 Los archivos relacionados a la simulacion son:  
 >`sim.py` donde se simula el funcionamiento del centro kinesiologico, para calulcar las utilidades.  
 >`entidades.py` en este archivo se definen las entidades que componen el centro kinesiologico, como paciente, atencion, falla, etc.  
