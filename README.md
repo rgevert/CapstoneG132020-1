@@ -11,7 +11,7 @@ Luego estan los archivos relacionados a la heuristica desarrollada para la asign
 >`linkedlist.py` Aca esta el algoritmo utilizado para asignar las sesiones a un paciente. La razon del nombre es que las horas de los pacientes fueron modeladas como una lista ligada, para poder ir hacia atras y modificar horas en caso de que sea necesario.  
 
 Por ultimo, los archivos relacionado a la busqueda tabu son:  
->`calcular_alpha.py` bla bla bla
->`validar_alpha.py` bla bla bla
+>`calcular_alpha.py` bla bla bla.  
+>`validar_alpha.py` bla bla bla.  
 
 Para correr el programa se debe correr el archivo [nombre del archivo] y ......
