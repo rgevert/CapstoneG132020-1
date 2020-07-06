@@ -10,8 +10,6 @@ Los archivos relacionados a la simulacion son:
 Luego estan los archivos relacionados a la heuristica desarrollada para la asignar las sesiones de paciente:  
 >`linkedlist.py` Aca esta el algoritmo utilizado para asignar las sesiones a un paciente. La razon del nombre (linkedlist) es que las horas de los pacientes fueron modeladas como una lista ligada, para poder ir hacia atras y modificar horas en caso de que sea necesario.  
 
-Por ultimo, los archivos relacionado a la busqueda tabu son:  
->`calcular_alpha.py` bla bla bla.  
->`validar_alpha.py` bla bla bla.  
+Por ultimo, los archivos relacionado a la busqueda tabu son:    
+>`validar_alpha.py` En este módulo se encuentra el algoritmo de busqueda tabú. Para correr el algoritmo hay que crear unainstancia de la calse `Validar` y correr el método calcular_alfas. 
 
-Para correr el programa se debe correr el archivo [nombre del archivo] y ......
